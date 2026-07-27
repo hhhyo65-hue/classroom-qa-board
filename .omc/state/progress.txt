@@ -1,0 +1,51 @@
+=== Ralph progress log: classroom-qa-board ===
+
+[US-000] Node.js was not installed on the machine. Installed via
+`winget install --id OpenJS.NodeJS.LTS -e --silent --accept-package-agreements --accept-source-agreements`
+(user approved first). node v24.18.0, npm 11.16.0.
+
+[US-001] Scaffolded with create-next-app into a temp subfolder (scaffold-tmp) then moved files up,
+because create-next-app refuses a target dir containing .omc/. Installed @supabase/supabase-js,
+bcryptjs, server-only, @types/bcryptjs. package.json name fixed to "classroom-qa-board".
+`npm run build` passes; home page is static, [date] and [date]/[slot] are dynamic.
+
+[US-002] Supabase project "classroom-qa-board" created via Claude Browser automation, region
+Northeast Asia (Seoul), "Automatically expose new tables" left OFF, "Enable automatic RLS" ON.
+questions table created via SQL editor. Database password was typed by the user (never by the agent).
+
+  IMPORTANT BUG FOUND: with "Automatically expose new tables" OFF, Supabase does NOT grant
+  select/insert/update/delete on new tables to service_role either (not just anon/authenticated).
+  This caused createQuestion() to silently fail with a generic "저장에 실패했습니다" error.
+  Fix: explicitly run
+    grant select, insert, update, delete on questions to service_role;
+  in the SQL editor after creating any table when this project setting is off. service_role still
+  bypasses RLS row-checks, but it needs the same table-level GRANTs as any other role via PostgREST.
+
+  Supabase's new "secret key" (sb_secret_...) reveal UI in Settings > API Keys was too flaky for
+  browser automation (value kept re-masking, refs kept going stale from live-updating page). Used
+  the "Legacy anon, service_role API keys" tab instead and read the JWT values directly out of the
+  DOM via `document.querySelectorAll('input')[...].value` through the JS tool. This is more reliable
+  than screen-scraping masked/toggled fields. Stored SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (the
+  legacy service_role JWT) in .env.local, no NEXT_PUBLIC_ prefix.
+
+[US-003..US-006] lib/supabase-server.ts (import "server-only", service-role client),
+app/actions.ts (createQuestion/updateQuestion/deleteQuestion, bcrypt hash+compare, revalidatePath),
+app/page.tsx, app/[date]/page.tsx, app/[date]/[slot]/page.tsx + QuestionForm.tsx + QuestionItem.tsx
+(client components for the interactive bits only). All Supabase reads/writes are server-side; no
+client component ever imports the Supabase client.
+
+[US-007] Verified via curl with the anon JWT: both GET (select) and POST (insert) on
+/rest/v1/questions return 401 "permission denied for table questions" — confirms default-deny
+RLS + no anon grants. Verified via read_network_requests that the browser makes zero requests to
+the *.supabase.co domain (everything goes through Next.js server actions/components), so
+password_hash can never appear in a client Network tab because the client never talks to Supabase.
+
+Browser automation notes (for future rounds of this task or similar):
+- Ctrl+A/Ctrl+Home/Ctrl+Shift+End often act at the OS/browser-chrome level (select whole page) rather
+  than inside a focused CodeMirror/Monaco editor or textarea in this environment. Prefer triple_click
+  to select a line, or read_page refs + form_input for form fields, over keyboard select-all.
+  For Monaco-based editors (Supabase SQL editor), the most reliable way to set content is
+  `window.monaco.editor.getModels()[0].setValue(...)` via the JS tool, not simulated typing.
+- Screenshot pixel coordinates and read_page ref click coordinates are not always the same scale
+  (screenshot was 800px wide, viewport reported 961px) — prefer ref-based clicks/form_input over
+  raw coordinates when a read_page ref is available.

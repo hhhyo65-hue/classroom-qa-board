@@ -1,0 +1,13 @@
+{
+  "active": false,
+  "current_phase": "deep-interview-complete",
+  "state": {
+    "interview_id": "board-app-2026-07-24",
+    "type": "greenfield",
+    "current_ambiguity": 0.14,
+    "threshold": 0.2,
+    "threshold_source": "default",
+    "spec_path": ".omc/specs/deep-interview-classroom-qa-board.md",
+    "status": "PASSED"
+  }
+}

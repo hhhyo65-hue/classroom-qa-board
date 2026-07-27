@@ -7,6 +7,32 @@ import { DATE_RE, isValidSlot } from "@/lib/types";
 
 type ActionResult = { success: true } | { error: string };
 
+async function verifyPassword(
+  id: string,
+  date: string,
+  slot: number,
+  password: string
+): Promise<{ error: string } | null> {
+  const { data, error: fetchError } = await supabaseServer
+    .from("questions")
+    .select("password_hash")
+    .eq("id", id)
+    .eq("session_date", date)
+    .eq("slot_number", slot)
+    .single();
+
+  if (fetchError || !data) {
+    return { error: "질문을 찾을 수 없습니다." };
+  }
+
+  const matches = await bcrypt.compare(password, data.password_hash);
+  if (!matches) {
+    return { error: "비밀번호가 일치하지 않습니다." };
+  }
+
+  return null;
+}
+
 export async function createQuestion(
   date: string,
   slot: number,
@@ -55,21 +81,9 @@ export async function updateQuestion(
     return { error: "질문 내용을 입력해주세요." };
   }
 
-  const { data, error: fetchError } = await supabaseServer
-    .from("questions")
-    .select("password_hash")
-    .eq("id", id)
-    .eq("session_date", date)
-    .eq("slot_number", slot)
-    .single();
-
-  if (fetchError || !data) {
-    return { error: "질문을 찾을 수 없습니다." };
-  }
-
-  const matches = await bcrypt.compare(password, data.password_hash);
-  if (!matches) {
-    return { error: "비밀번호가 일치하지 않습니다." };
+  const verifyError = await verifyPassword(id, date, slot, password);
+  if (verifyError) {
+    return verifyError;
   }
 
   const { error } = await supabaseServer
@@ -95,21 +109,9 @@ export async function deleteQuestion(
     return { error: "잘못된 요청입니다." };
   }
 
-  const { data, error: fetchError } = await supabaseServer
-    .from("questions")
-    .select("password_hash")
-    .eq("id", id)
-    .eq("session_date", date)
-    .eq("slot_number", slot)
-    .single();
-
-  if (fetchError || !data) {
-    return { error: "질문을 찾을 수 없습니다." };
-  }
-
-  const matches = await bcrypt.compare(password, data.password_hash);
-  if (!matches) {
-    return { error: "비밀번호가 일치하지 않습니다." };
+  const verifyError = await verifyPassword(id, date, slot, password);
+  if (verifyError) {
+    return verifyError;
   }
 
   const { error } = await supabaseServer.from("questions").delete().eq("id", id);

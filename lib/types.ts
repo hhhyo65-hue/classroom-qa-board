@@ -1,9 +1,3 @@
-export type Question = {
-  id: string;
-  content: string;
-  created_at: string;
-};
-
 export const SLOTS = [1, 2, 3, 4, 5, 6, 7] as const;
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 

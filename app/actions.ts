@@ -36,11 +36,15 @@ async function verifyPassword(
 export async function createQuestion(
   date: string,
   slot: number,
+  authorName: string,
   content: string,
   password: string
 ): Promise<ActionResult> {
   if (!DATE_RE.test(date) || !isValidSlot(slot)) {
     return { error: "잘못된 요청입니다." };
+  }
+  if (!authorName.trim()) {
+    return { error: "이름(또는 학번)을 입력해주세요." };
   }
   if (!content.trim()) {
     return { error: "질문 내용을 입력해주세요." };
@@ -54,6 +58,7 @@ export async function createQuestion(
   const { error } = await supabaseServer.from("questions").insert({
     session_date: date,
     slot_number: slot,
+    author_name: authorName.trim(),
     content: content.trim(),
     password_hash,
   });
@@ -65,6 +70,39 @@ export async function createQuestion(
   revalidatePath(`/${date}/${slot}`);
   revalidatePath("/");
   return { success: true };
+}
+
+type TeacherQuestion = {
+  id: string;
+  author_name: string | null;
+  content: string;
+  created_at: string;
+};
+
+export async function getTeacherQuestions(
+  date: string,
+  slot: number,
+  password: string
+): Promise<{ success: true; questions: TeacherQuestion[] } | { error: string }> {
+  if (!DATE_RE.test(date) || !isValidSlot(slot)) {
+    return { error: "잘못된 요청입니다." };
+  }
+  if (!process.env.TEACHER_VIEW_PASSWORD || password !== process.env.TEACHER_VIEW_PASSWORD) {
+    return { error: "비밀번호가 일치하지 않습니다." };
+  }
+
+  const { data, error } = await supabaseServer
+    .from("questions")
+    .select("id, author_name, content, created_at")
+    .eq("session_date", date)
+    .eq("slot_number", slot)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return { error: "조회에 실패했습니다. 다시 시도해주세요." };
+  }
+
+  return { success: true, questions: data ?? [] };
 }
 
 export async function updateQuestion(

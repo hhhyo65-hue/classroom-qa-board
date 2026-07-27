@@ -10,6 +10,7 @@ export default function QuestionForm({
   date: string;
   slot: number;
 }) {
+  const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -19,11 +20,12 @@ export default function QuestionForm({
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = await createQuestion(date, slot, content, password);
+      const result = await createQuestion(date, slot, authorName, content, password);
       if ("error" in result) {
         setError(result.error);
         return;
       }
+      setAuthorName("");
       setContent("");
       setPassword("");
     });
@@ -31,10 +33,18 @@ export default function QuestionForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2 border rounded-lg p-4">
+      <input
+        type="text"
+        value={authorName}
+        onChange={(e) => setAuthorName(e.target.value)}
+        placeholder="이름 또는 학번 (다른 학생에게는 안 보여요)"
+        className="w-full border rounded p-2"
+        required
+      />
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="질문을 입력하세요 (익명)"
+        placeholder="질문을 입력하세요 (다른 학생에게는 익명으로 보여요)"
         className="w-full border rounded p-2"
         rows={3}
         required

@@ -24,7 +24,11 @@ export default function QuestionItem({
     setMode("view");
     setPassword("");
     setError(null);
+  }
+
+  function startEdit() {
     setEditContent(content);
+    setMode("edit");
   }
 
   function handleUpdate(e: FormEvent) {
@@ -124,7 +128,7 @@ export default function QuestionItem({
     <li className="border rounded-lg p-3">
       <p className="mb-2 whitespace-pre-wrap">{content}</p>
       <div className="flex gap-2 text-sm">
-        <button onClick={() => setMode("edit")} className="text-blue-600 underline">
+        <button onClick={startEdit} className="text-blue-600 underline">
           수정
         </button>
         <button onClick={() => setMode("delete")} className="text-red-600 underline">

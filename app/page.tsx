@@ -2,11 +2,7 @@ import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase-server";
 
 function todayString() {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
 }
 
 export default async function HomePage() {
@@ -15,7 +11,8 @@ export default async function HomePage() {
   const { data, error } = await supabaseServer
     .from("questions")
     .select("session_date")
-    .order("session_date", { ascending: false });
+    .order("session_date", { ascending: false })
+    .limit(5000);
 
   const dates = error
     ? []

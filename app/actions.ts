@@ -59,6 +59,8 @@ export async function updateQuestion(
     .from("questions")
     .select("password_hash")
     .eq("id", id)
+    .eq("session_date", date)
+    .eq("slot_number", slot)
     .single();
 
   if (fetchError || !data) {
@@ -97,6 +99,8 @@ export async function deleteQuestion(
     .from("questions")
     .select("password_hash")
     .eq("id", id)
+    .eq("session_date", date)
+    .eq("slot_number", slot)
     .single();
 
   if (fetchError || !data) {

@@ -40,6 +40,24 @@ RLS + no anon grants. Verified via read_network_requests that the browser makes 
 the *.supabase.co domain (everything goes through Next.js server actions/components), so
 password_hash can never appear in a client Network tab because the client never talks to Supabase.
 
+[Post-deploy architect review] Ran a final architect verification against the live deployment.
+Found and fixed 3 real bugs before declaring done:
+  1. Timezone: todayString() used server-local time; Vercel runs UTC, so mornings in KST
+     showed "yesterday" as today. Fixed with Intl.DateTimeFormat(..., {timeZone: "Asia/Seoul"}).
+  2. Unbounded date list query could silently drop old dates past PostgREST's 1000-row cap.
+     Added .limit(5000) as a pragmatic fix for this project's actual scale.
+  3. QuestionItem's reset() was clobbering the edit textarea with stale pre-edit content;
+     fixed by seeding editContent on entering edit mode instead of on close.
+  Also hardened update/delete to match session_date+slot_number in addition to id (defense
+  in depth against cross-slot revalidatePath targets).
+Then ran ai-slop-cleaner scoped to session-changed files: extracted a shared verifyPassword()
+helper (was duplicated across updateQuestion/deleteQuestion) and removed an unused Question
+type export from lib/types.ts. Re-verified typecheck/lint/build + manual CRUD + wrong-password
+rejection after both passes, then pushed — Vercel auto-deployed both fix commits successfully.
+
+Final state: all 11 PRD stories pass, live at https://classroom-qa-board.vercel.app,
+GitHub repo at https://github.com/hhhyo65-hue/classroom-qa-board.
+
 Browser automation notes (for future rounds of this task or similar):
 - Ctrl+A/Ctrl+Home/Ctrl+Shift+End often act at the OS/browser-chrome level (select whole page) rather
   than inside a focused CodeMirror/Monaco editor or textarea in this environment. Prefer triple_click
